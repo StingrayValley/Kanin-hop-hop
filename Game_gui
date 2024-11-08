@@ -1,0 +1,84 @@
+import PySimpleGUI as sg
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from Game_simulation import monte_carlo_simulation  # Importér monte_carlo_simulation fra modul 1
+
+# Layout til GUI
+layout = [
+    [sg.Text("Antal spillere:"), sg.InputText("", size=(5, 1), key="num_players")],
+    [sg.Text("Antal simuleringer:"), sg.InputText("", size=(5, 1), key="num_simulations")],
+    [sg.Text("Vælg regelsæt:")],
+    [sg.Radio("Normal", "ruleset", default=True, key="normal"), 
+     sg.Radio("Hurtig", "ruleset", key="hurtig"), 
+     sg.Radio("Langsom", "ruleset", key="langsom")],
+    [sg.Button("Start Simulering"), sg.Button("Exit")],
+    [sg.Text("Sandsynligheder: ", size=(40, 1), key="result_text")],
+    [sg.Canvas(key="canvas")],
+]
+
+# Opret vinduet
+window = sg.Window("Kanin Hop Hop Simulation", layout, finalize=True)
+
+# Funktion til at tegne figuren på canvas
+def draw_figure(canvas, figure):
+    """Tegner Matplotlib-figuren på PySimpleGUI-canvas."""
+    # Fjern tidligere figurer, hvis de findes
+    for child in canvas.winfo_children():
+        child.destroy()
+    
+    figure_canvas_agg = FigureCanvasTkAgg(figure, canvas)
+    figure_canvas_agg.draw()
+    figure_canvas_agg.get_tk_widget().pack(side='top', fill='both', expand=1)
+    return figure_canvas_agg
+
+def plot_histogram(probabilities, num_players):
+    """Plotter histogram over sandsynlighederne og returnerer figuren."""
+    fig, ax = plt.subplots()
+    ax.bar(range(1, num_players + 1), probabilities)
+    ax.set_xlabel("Spiller")
+    ax.set_ylabel("Sandsynlighed for at vinde")
+    ax.set_title("Histogram over Kanin Hop Hop")
+    fig.tight_layout()  # Forbedrer layoutet
+    return fig
+
+# Event loop
+while True:
+    event, values = window.read()
+    if event == sg.WIN_CLOSED or event == "Exit":
+        break
+
+    if event == "Start Simulering":
+        try:
+            # Hent og valider brugerinput
+            num_players = int(values["num_players"])
+            num_simulations = int(values["num_simulations"])
+
+            # Begrænsninger på input
+            if num_players < 2 or num_simulations < 1 or num_simulations > 1000:
+                sg.popup_error("Input Error", "Antal spillere skal være mindst 2 og simuleringer mellem 1 og 1000.")
+                continue
+
+            # Find det valgte regelsæt
+            if values["normal"]:
+                ruleset = "normal"
+            elif values["hurtig"]:
+                ruleset = "hurtig"
+            else:
+                ruleset = "langsom"
+
+            # Simuler spillet og få sandsynligheder
+            probabilities = monte_carlo_simulation(num_players, num_simulations, ruleset)
+
+            # Vis sandsynlighederne i GUI'en
+            window["result_text"].update(f"Sandsynligheder: {', '.join([f'{p:.2%}' for p in probabilities])}")
+
+            # Plot histogram og vis det i GUI'en
+            fig = plot_histogram(probabilities, num_players)
+            draw_figure(window["canvas"].TKCanvas, fig)
+
+        except ValueError:
+            sg.popup_error("Input Error", "Indtast venligst gyldige tal.")
+        except ImportError:
+            sg.popup_error("Fejl", "Kunne ikke importere simulationen. Tjek, at 'Game_simulation.py' er tilgængelig.")
+
+window.close()
