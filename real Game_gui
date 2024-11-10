@@ -36,14 +36,14 @@ def run_simulation(num_players, ruleset, num_simulations):
 
 # Layout til GUI
 layout = [
-    [sg.Text("Antal spillere:"), sg.InputText(" ", size=(5, 1), key="num_players")],
-    [sg.Text("Regler:"), sg.Combo(["normal", "fast", "slow"], default_value="normal", key="ruleset")],
-    [sg.Text("Antal simuleringer:"), sg.InputText(" ", size=(5, 1), key="num_simulations")],
-    [sg.Button("Start Simulering"), sg.Button("Exit")]
+    [sg.Text("Antal spillere:"), sg.InputText(" ", size=(12, 1), key="num_players")],
+    [sg.Text("Regler:"), sg.Combo(["normal", "fast", "slow"], default_value="normal", size=(12, 1), key="ruleset")],
+    [sg.Text("Antal simuleringer:"), sg.InputText(" ", size=(12, 1), key="num_simulations")],
+    [sg.Button("Start Simulering", size=(15, 1)), sg.Button("Exit", size=(10, 1))]
 ]
 
 # Opret vinduet
-window = sg.Window("Kanin Hop Hop Simulation", layout)
+window = sg.Window("Kanin Hop Hop Simulation", layout, size=(250, 130))
 
 
 # Hovedløkken for GUI
