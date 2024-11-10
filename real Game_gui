@@ -1,0 +1,73 @@
+"""
+gui.py
+
+Dette modul tilbyder en grafisk brugergrænseflade til Kanin Hop Hop simuleringen ved hjælp af PySimpleGUI.
+Brugere kan vælge antal spillere, regelsæt og antal simuleringer. Resultaterne
+vises som estimerede vinder sandsynligheder og et histogram.
+
+Funktioner:
+    run_simulation(): Henter brugerinput, kører simuleringen og viser resultaterne.
+"""
+
+import PySimpleGUI as sg
+import matplotlib.pyplot as plt
+from Game_simulation import monte_carlo_simulation  # Importér monte_carlo_simulation fra modul 1
+
+
+def run_simulation(num_players, ruleset, num_simulations):
+    """Kør simuleringen baseret på brugerinput og vis resultaterne."""
+    
+    # Kør Monte Carlo-simulering og brug rækkefølgen eksplicit
+    running_probabilities = monte_carlo_simulation(num_players=num_players, 
+                                                   num_simulations=num_simulations, 
+                                                   ruleset=ruleset)
+    
+    # Plot løbende sandsynligheder
+    plt.figure(figsize=(10, 6))
+    for i, probabilities in enumerate(running_probabilities):
+        plt.plot(probabilities, label=f"Spiller {i + 1}")
+    
+    plt.xlabel("Spil")
+    plt.ylabel("Sandsynlighed for at vinde [%]")
+    plt.title("Løbende sandsynligheder i Kanin Hop Hop")
+    plt.legend()
+    plt.show()
+    plt.show(block=True)  # Bloker GUI, indtil brugeren lukker diagrammet
+
+# Layout til GUI
+layout = [
+    [sg.Text("Antal spillere:"), sg.InputText(" ", size=(5, 1), key="num_players")],
+    [sg.Text("Regler:"), sg.Combo(["normal", "fast", "slow"], default_value="normal", key="ruleset")],
+    [sg.Text("Antal simuleringer:"), sg.InputText(" ", size=(5, 1), key="num_simulations")],
+    [sg.Button("Start Simulering"), sg.Button("Exit")]
+]
+
+# Opret vinduet
+window = sg.Window("Kanin Hop Hop Simulation", layout)
+
+
+# Hovedløkken for GUI
+while True:
+    event, values = window.read()
+    if event == sg.WINDOW_CLOSED or event == "Exit":
+        break
+    if event == "Start Simulering":
+        try:
+            # Hent og konverter inputværdier til heltal
+            num_players = int(values["num_players"].strip())  # Fjern mellemrum og konverter til heltal
+            ruleset = values["ruleset"]
+            num_simulations = int(values["num_simulations"].strip())
+
+            # Udskriv for at bekræfte, at værdierne er korrekte
+            print(f"num_players: {num_players}, ruleset: {ruleset}, num_simulations: {num_simulations}")
+        
+            # Kør simuleringen og vis resultaterne
+            run_simulation(num_players, ruleset, num_simulations)
+
+        except ValueError:
+            sg.popup_error("Input Error", "Indtast venligst gyldige tal.")
+        except ImportError:
+            sg.popup_error("Fejl", "Kunne ikke importere simulationen. Tjek, at 'Game_simulation.py' er tilgængelig.")
+
+# Luk vinduet
+window.close()
