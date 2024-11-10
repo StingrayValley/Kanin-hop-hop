@@ -1,0 +1,105 @@
+"""
+Game_simulation.py
+
+Dette modul indeholder kernefunktionaliteten til at simulere et Kanin Hop Hop spil.
+Det inkluderer funktioner til at simulere individuelle ture, spille spillet og køre Monte Carlo-simuleringer
+for at estimere vinder sandsynligheder for hver spiller.
+
+Funktioner:
+    roll_die(): Simuler et terningekast for spillet.
+    initialize_game(num_players): Initialiser spiltilstanden.
+    play_turn(player, game_state, ruleset): Simuler en tur for en given spiller.
+    simulate_game(num_players, ruleset): Simuler et enkelt spil og returner vindere.
+    monte_carlo_simulation(num_players, ruleset, num_simulations): Kør Monte Carlo-simuleringer.
+"""
+
+import random
+
+def roll_die():
+    """Simulerer et terningkast som et tilfældigt tal mellem 0 og 5."""
+    return random.randint(0, 5)
+
+def initialize_exit_holes():
+    """Initialiser udgangshullerne med fem huller repræsenteret som booleans (True hvis besat)."""
+    return [True] * 5
+
+def remove_rabbit_from_hole(exit_holes):
+    """Fjern en kanin fra et tilfældigt udgangshul, hvis der er nogen."""
+    available_holes = [i for i, occupied in enumerate(exit_holes) if occupied]
+    if available_holes:
+        chosen_hole = random.choice(available_holes)
+        exit_holes[chosen_hole] = False
+        return True
+    return False
+
+def play_game(num_players, ruleset):
+    """Simulerer et spil Kanin Hop Hop med udgangshuller.
+    
+    Argumenter:
+        num_players: Antal spillere i spillet.
+        ruleset: Det regelsæt der er valgt ("normal", "hurtig", "langsom").
+        
+    Returnerer:
+        list: Liste af vindende spilleres indekser hvis der er uafgjort.
+    """
+    num_rabbits = 20  # Start med 20 kaniner i hulen
+    players_rabbits = [0] * num_players  # Start med 0 kaniner for alle spillere
+    exit_holes = initialize_exit_holes()  # Udgangshullerne
+    
+    while num_rabbits > 0:
+        for i in range(num_players):
+            if num_rabbits <= 0:
+                break
+            roll = roll_die()
+
+            # Spilleregler
+            if ruleset == "fast":
+                if roll == 5:  # 6'eren i 0-5 intervallet
+                    if not remove_rabbit_from_hole(exit_holes):
+                        num_rabbits -= 1  # Hvis der ikke er kaniner i udgangshullerne, fjern en fra midten
+                    players_rabbits[i] += 1
+                    if num_rabbits > 0:
+                        players_rabbits[i] += 1  # Hurtig variant giver en ekstra kanin
+                        num_rabbits -= 1
+            
+            elif ruleset == "slow":
+                if roll == 0:  # 1'eren i 0-5 intervallet
+                    if not remove_rabbit_from_hole(exit_holes):
+                        num_rabbits -= 1
+                    players_rabbits[i] += 1
+
+            elif ruleset == "normal":
+                if roll == 5:  # 6'eren i 0-5 intervallet
+                    if not remove_rabbit_from_hole(exit_holes):
+                        num_rabbits -= 1
+                    players_rabbits[i] += 1
+
+    # Find spiller(e) med flest kaniner
+    max_rabbits = max(players_rabbits)
+    winners = [j for j, rabbits in enumerate(players_rabbits) if rabbits == max_rabbits]
+    return winners
+
+def monte_carlo_simulation(num_players, num_simulations, ruleset):
+    """Kører Monte Carlo simulationer for at estimere vinder sandsynligheder for hver spiller.
+    
+    Argumenter:
+        num_players: Antallet af spillere.
+        num_simulations: Antallet af simuleringer.
+        ruleset: Regelsættet - "normal", "hurtig", eller "langsom".
+        
+    Returnerer:
+        list: Sandsynlighederne for hver spiller at vinde.
+    """
+    wins = [0] * num_players
+    running_probabilities = [[] for _ in range(num_players)]  # For løbende resultater
+
+    for i in range(num_simulations):
+        winners = play_game(num_players, ruleset)
+        for winner in winners:
+            wins[winner] += 1 / len(winners)  # Fordel sejr ligeligt ved uafgjort
+
+        # Beregn og gem løbende sandsynligheder
+        for j in range(num_players):
+            running_probabilities[j].append(wins[j] / (i + 1) * 100)  # Procentvis sandsynlighed
+
+    return running_probabilities
